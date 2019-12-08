@@ -40,8 +40,35 @@ public class Calculator {
     // ------  Evaluate RPN expression -------------------
 
     double evalPostfix(List<String> postfix) {
-        // TODO
-        return 0;
+        // Data holders
+        Stack<String> stack = new Stack<>();
+
+        // Loops through postfix
+        for (int i = 0; i < postfix.size(); i++){
+            String current = postfix.get(i);
+
+            // If it's a number
+            // Add to stack
+            if (Character.isDigit(current.charAt(0))) {
+                stack.push(current);
+            }
+            // If it's not (Is an operator)
+            // Pop two numbers from the stack and apply the operator
+            else{
+                if (stack.empty()) {
+                    return 0;
+                }
+                String num1 = stack.pop();
+                if (stack.empty()) {
+                    return 0;
+                }
+                String num2 = stack.pop();
+
+                stack.push(String.valueOf(applyOperator(current, Double.parseDouble(num1), Double.parseDouble(num2))));
+            }
+        }
+
+        return Double.parseDouble(stack.peek());
     }
 
     double applyOperator(String op, double d1, double d2) {
@@ -67,7 +94,7 @@ public class Calculator {
 
     List<String> infix2Postfix(List<String> infix) {
         // Data holders
-        Stack<String> op = new Stack<>();
+        Stack<String> stack = new Stack<>();
         List<String> output = new ArrayList<>();
 
         // Loops through infix
@@ -79,28 +106,53 @@ public class Calculator {
             if (Character.isDigit(current.charAt(0))){
                 output.add(infix.get(i));
             }
-            else if(isOperator(current)){
-                if ()
+            // If it's a opening parenthesis
+            else if (current.equals("(")){
+                stack.push(current);
             }
-            // Else push to op
+            // Is it's a closing parenthesis
+            else if (current.equals(")")){
+                // Pop to output until "(" is found
+                while (!stack.peek().equals("(")) {
+                    output.add(stack.pop());
+                }
+                // Discard matching parenthesis
+                stack.pop();
+            }
+            // Else (If it's an operator)
             else{
-                op.push(current);
+                // Pops the stack to output while stack should be popped
+                while (shouldPopStack(current, stack)) {
+                    output.add(stack.pop());
+                }
+                // Push operator to stack
+                stack.push(current);
             }
         }
 
         // Pop op to output
-        while(!op.empty()) {
-            output.add(op.pop());
+        while(!stack.empty()) {
+            output.add(stack.pop());
         }
-
-        // TEMP: PRINT OUTPUT
-        System.out.println(String.join(" ", output));
 
         return output;
     }
 
-    boolean isOperator(String op) {
-        return "+-*/^".contains(op);
+    // Checks if the operator at the top of the stack should get popped given the situation
+    boolean shouldPopStack(String current, Stack<String> stack) {
+        if (stack.isEmpty()){
+            return false;
+        }
+        else if (stack.peek().equals("(")){
+            return false;
+        }
+        else if (getPrecedence(current) < getPrecedence(stack.peek())){
+            return true;
+        }
+        else if (getPrecedence(current) == getPrecedence(stack.peek()) && getAssociativity(current) == Assoc.LEFT){
+            return true;
+        }
+        return false;
     }
 
     int getPrecedence(String op) {
@@ -111,7 +163,7 @@ public class Calculator {
         } else if ("^".contains(op)) {
             return 4;
         } else {
-            throw new RuntimeException(OP_NOT_FOUND);
+            throw new RuntimeException(OP_NOT_FOUND + ": \"" + op + "\"");
         }
     }
 
